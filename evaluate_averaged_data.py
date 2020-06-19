@@ -9,7 +9,7 @@ n_delays = 2 # Number of delays
 n_scans = 101 # Number of scans
 
 # Change directory to where files are located
-path = "/Users/arthun/Documents/Uni/Masterarbeit/Messsoftware/raw_data_20200527/probe_small"
+path = "./probe_small"
 os.chdir(path)
 
 # Preallocate arrays
@@ -237,14 +237,45 @@ m3_m2_summed_weights_ds = calculate_spectra_m3(m3_m2_summed_weights)
 
 w = m2_weight.sum(axis=2)
 d = np.average(m2_mean, axis=2)
-t = np.average(d, axis=1, weights=d)
+t = np.average(d, axis=1, weights=w)
 a = calculate_spectra_m2(t)
-print(a.shape)
-# plt.plot(np.average(m2_no_weights_ds[1,:,:], axis=0)-a[1], label="m2: no weights")
-plt.plot(np.average(m2_no_weights_ds[1,:,:], axis=0), label="m2: no weights")
-plt.plot(np.average(m2_m2_weights_ds[1,:,:], axis=0), label="m2: m2 weights")
-plt.plot(a[1], label="interleaves averaged first")
-# plt.plot(m2_weight[1,50,:,:,1].T)
-plt.legend()
-plt.grid()
-plt.show()
+# # print(a.shape)
+# # plt.plot(1/w[1,:,:,0].T-1/w[1,:,:,1].T)
+# # plt.plot(1/w[1,:,:,1].T)
+# # plt.plot(np.average(m2_no_weights_ds[1,:,:], axis=0)-a[1], label="m2: no weights")
+# # plt.plot(np.average(m2_no_weights_ds[1,:,:], axis=0) - np.average(m2_m2_weights_ds[1,:,:], axis=0), label="m2: no weights")
+# plt.plot(np.average(m2_no_weights_ds[1,:,:], axis=0), label="m2: no weights")
+# plt.plot(np.average(m2_m2_weights_ds[1,:,:], axis=0), label="m2: m2 weights")
+# plt.plot(a[1], label="m2: interleaves averaged first - then m2 weights")
+# # plt.plot(m2_weight[1,50,:,:,1].T)
+# plt.legend()
+# plt.grid()
+# plt.show()
+print(m2_no_weights_ds.shape)
+for i in range(1, n_scans):
+    t1 = np.average(d[:,:i], axis=1, weights=w[:,:i])
+    a = calculate_spectra_m2(t1)
+
+    t2 = np.average(m2_mean[:,:i], axis=1)
+    t2 = np.average(t2, axis=1)
+    b = calculate_spectra_m2(t2)
+
+    t3 = np.average(m2_mean[:,:i], axis=1, weights=m2_weight[:,:i])
+    t3 = np.average(t3, axis=1)
+    c = calculate_spectra_m2(t3)
+
+    fig, ax = plt.subplots(nrows=2,  figsize=(8.3,11.7))
+    fig.suptitle("scan 0 - {}".format(i))
+
+    ax[0].plot(b[1], label="m2: no weights")
+    ax[0].plot(c[1], label="m2: m2 weights")
+    ax[0].plot(a[1], label="m2: interleaves averaged first - then m2 weights")
+
+    ax[1].plot(c[1] - b[1], label="m2: m2 weights - m2: no weights" )
+    ax[1].plot(a[1] - b[1], label="m2: interleaves averaged first - m2: no weights")
+
+    [axis.legend(fontsize=8) for axis in ax]
+    [axis.grid() for axis in ax]
+
+    plt.savefig("convergence_{}.pdf".format(i))
+    plt.close(fig)
